@@ -1,14 +1,36 @@
+import axios from 'axios';
 import React from 'react'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
+import { Link, useNavigate } from 'react-router-dom';
+import { BASE_URL } from '../utils/constants';
+import { removeUser } from '../utils/userSlice';
+
 
 const Navbar = () => {
 
     const user = useSelector((store)=> store.user);
-    console.log(user);
+    const dispatch = useDispatch();
+    const navigate  =  useNavigate(); 
+    
+    const handleLogout = async()=>{
+
+      try{
+        const res = await axios.post(BASE_URL+"/logout",
+          {},
+          {withCredentials:true}
+        )
+        dispatch(removeUser());
+        return navigate("/login")
+      }
+            catch(err){
+              console.log(err)
+      }
+
+    }
   return (
     <div className="navbar min-h-20 mt-4 bg-gradient-to-r from-primary to-secondary shadow-lg backdrop-blur-sm border-b border-base-300">
         <div className="flex-1">
-          <a className="btn btn-ghost hover:bg-transparent focus:outline-none focus:ring-0 focus:border-none active:outline-none active:ring-0 active:border-none group transition-all duration-300" style={{ outline: 'none', border: 'none', boxShadow: 'none' }}>
+          <Link to="/" className="btn btn-ghost hover:bg-transparent focus:outline-none focus:ring-0 focus:border-none active:outline-none active:ring-0 active:border-none group transition-all duration-300" style={{ outline: 'none', border: 'none', boxShadow: 'none' }}>
             <div className="relative">
               <img
                 src="/logo.png"
@@ -25,7 +47,7 @@ const Navbar = () => {
                 Compile your next connection
               </span>
             </div>
-          </a>
+          </Link>
         </div>
         <div className="flex gap-3 items-center mr-4 text-black">
           {user && <div className="dropdown dropdown-end flex">
@@ -43,13 +65,13 @@ const Navbar = () => {
               tabIndex={0}
               className="menu menu-sm dropdown-content bg-base-100/95 backdrop-blur-md rounded-xl z-[1] mt-3 w-52 p-3 shadow-xl border border-base-300">
               <li>
-                <a className="text-white justify-between hover:bg-primary/10 rounded-lg transition-colors duration-200">
+                <Link to="/profile" className="text-white justify-between hover:bg-primary/10 rounded-lg transition-colors duration-200">
                   Profile
                   <span className="badge badge-primary badge-sm">New</span>
-                </a>
+                </Link>
               </li>
               <li><a className="text-white hover:bg-primary/10 rounded-lg transition-colors duration-200">Settings</a></li>
-              <li><a className=" hover:bg-error/10 text-error rounded-lg transition-colors duration-200">Logout</a></li>
+              <li><a onClick={handleLogout} className=" hover:bg-error/10 text-error rounded-lg transition-colors duration-200">Logout</a></li>
             </ul>
           </div>}
         </div>
