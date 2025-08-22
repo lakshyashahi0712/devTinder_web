@@ -2,7 +2,7 @@ import React from 'react'
 
 const Footer = () => {
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-40">
+        <div className=" bottom-0 left-0 right-0 z-40">
             <footer className="bg-gradient-to-r from-primary to-secondary text-primary-content relative overflow-hidden">
                 {/* Background decoration */}
                 <div className="absolute inset-0 bg-black/10"></div>
