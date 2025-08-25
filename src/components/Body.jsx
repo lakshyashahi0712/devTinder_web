@@ -11,11 +11,11 @@ import { addUser } from '../utils/userSlice'
 const Body = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch()
-  const userData = useSelector((store)=>store.user);
+  const userData = useSelector((store) => store.user);
 
   const fetchUser = async () => {
     if (userData) return; // Don't fetch if user data already exists
-    
+
     try {
       const res = await axios.get(BASE_URL + "/profile/view", {
         withCredentials: true
@@ -34,11 +34,11 @@ const Body = () => {
 
   return (
     <div>
-<Navbar />
-<Outlet />
-<Footer/>
-</div>
-)
+      <Navbar />
+      <Outlet />
+      <Footer />
+    </div>
+  )
 }
 
 export default Body

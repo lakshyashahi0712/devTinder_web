@@ -70,7 +70,7 @@ const Navbar = () => {
                   <span className="badge badge-primary badge-sm">New</span>
                 </Link>
               </li>
-              <li><a className="text-white hover:bg-primary/10 rounded-lg transition-colors duration-200">Settings</a></li>
+              <li><Link to="/connections" className="text-white hover:bg-primary/10 rounded-lg transition-colors duration-200">Connections</Link></li>
               <li><a onClick={handleLogout} className=" hover:bg-error/10 text-error rounded-lg transition-colors duration-200">Logout</a></li>
             </ul>
           </div>}
