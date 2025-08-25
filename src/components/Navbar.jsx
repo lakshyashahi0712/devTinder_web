@@ -71,6 +71,7 @@ const Navbar = () => {
                 </Link>
               </li>
               <li><Link to="/connections" className="text-white hover:bg-primary/10 rounded-lg transition-colors duration-200">Connections</Link></li>
+              <li><Link to="/requests" className="text-white hover:bg-primary/10 rounded-lg transition-colors duration-200">Requests</Link></li>
               <li><a onClick={handleLogout} className=" hover:bg-error/10 text-error rounded-lg transition-colors duration-200">Logout</a></li>
             </ul>
           </div>}
