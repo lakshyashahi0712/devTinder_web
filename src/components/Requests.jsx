@@ -2,12 +2,22 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { BASE_URL } from "../utils/constants";
 import { useDispatch, useSelector } from "react-redux";
-import { addRequests } from "../utils/requestSlice";
+import { addRequests, removeRequest } from "../utils/requestSlice";
 
 const Requests = () => {
     const requests = useSelector((store)=>store.requests)
   const dispatch = useDispatch();
       const [isLoading, setIsLoading] = useState(true);
+
+      const reviewRequest = async(status , _id)=>{
+
+        try{
+            const res = await axios.post(BASE_URL + "/request/review/" + status + "/" + _id , {} ,{withCredentials:true})
+            dispatch(removeRequest(_id))
+        }catch(err){
+            console.log(err.message);
+        }
+      }
   const fetchRequests = async () => {
     try {
       const res = await axios.get(BASE_URL + "/user/requests/received", {
@@ -114,6 +124,8 @@ const Requests = () => {
                                     <p className="text-base-content/80 text-center text-sm leading-relaxed line-clamp-3">
                                         {about || "No bio available"}
                                     </p>
+                                    <button onClick={() => reviewRequest("rejected", request._id)}>REJECT</button>
+                                    <button onClick={() => reviewRequest("accepted", request._id)}>ACCEPT</button>
                                 </div>
                             </div>
                         );
