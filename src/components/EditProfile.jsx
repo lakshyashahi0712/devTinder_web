@@ -9,11 +9,14 @@ const EditProfile = ({ user }) => {
   const [firstName, setFirstName] = useState(user.firstName);
   const [lastName, setLastName] = useState(user.lastName);
   const [photoUrl, setPhotoUrl] = useState(user.photoUrl);
-  const [age, setAge] = useState(user.age);
-  const [gender, setGender] = useState(user.gender);
+  const [age, setAge] = useState(user.age || "");
+  const [gender, setGender] = useState(user.gender || "");
   const [about, setAbout] = useState(user.about);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(photoUrl);
   const dispatch = useDispatch();
 
   // Auto-dismiss success message after 5 seconds
@@ -26,20 +29,89 @@ const EditProfile = ({ user }) => {
     }
   }, [error]);
 
+  // Update preview when photoUrl changes
+  useEffect(() => {
+    setPreviewUrl(photoUrl);
+  }, [photoUrl]);
+
+  // Handle file selection
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file');
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size should be less than 5MB');
+        return;
+      }
+
+      setSelectedFile(file);
+      setError(""); // Clear any previous errors
+      
+      // Create preview URL
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewUrl(objectUrl);
+    }
+  };
+
+  // Upload image to backend
+  const uploadImageToBackend = async (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await axios.post(BASE_URL + '/upload-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        withCredentials: true
+      });
+      return response.data.imageUrl;
+    } catch (error) {
+      throw new Error(error.response?.data?.error || 'Failed to upload image');
+    }
+  };
+
   const saveProfile = async () => {
     try {
       setError("");
       setIsLoading(true);
+      
+      let finalPhotoUrl = photoUrl;
+      
+      // Upload image if a new file is selected
+      if (selectedFile) {
+        setIsUploadingImage(true);
+        try {
+          finalPhotoUrl = await uploadImageToBackend(selectedFile);
+          setPhotoUrl(finalPhotoUrl);
+        } catch (uploadError) {
+          setError(uploadError.message);
+          return;
+        } finally {
+          setIsUploadingImage(false);
+        }
+      }
+      
       const res = await axios.patch(BASE_URL + "/profile/edit", {
-        firstName, lastName, photoUrl, age, about, gender
+        firstName, lastName, photoUrl: finalPhotoUrl, age, about, gender
       }, { withCredentials: true });
+      
       dispatch(addUser(res?.data?.data));
       setError("Profile updated successfully!");
+      setSelectedFile(null); // Clear selected file after successful upload
+      
     } catch (err) {
       console.error("Save profile error:", err);
       setError(err.response?.data?.error || err.message || "Failed to update profile");
     } finally {
       setIsLoading(false);
+      setIsUploadingImage(false);
     }
   }
 
@@ -109,26 +181,74 @@ const EditProfile = ({ user }) => {
                     </div>
                   </div>
 
-                  {/* Photo URL */}
+                  {/* Profile Photo */}
                   <div className="form-control">
                     <label className="label">
                       <span className="label-text font-semibold text-base-content/90 flex items-center gap-2">
                         <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                        Photo URL
+                        Profile Photo
                       </span>
                     </label>
+                    
+                    {/* Photo Preview */}
+                    <div className="flex justify-center mb-4">
+                      <div className="avatar">
+                        <div className="w-24 h-24 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
+                          <img 
+                            src={previewUrl || "https://via.placeholder.com/150?text=No+Photo"} 
+                            alt="Profile Preview"
+                            className="rounded-full object-cover w-full h-full"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Upload Status */}
+                    {isUploadingImage && (
+                      <div className="flex items-center justify-center gap-2 text-primary mb-4">
+                        <span className="loading loading-spinner loading-sm"></span>
+                        <span className="text-sm">Uploading image...</span>
+                      </div>
+                    )}
+
+                    {/* File Upload Button */}
+                    <div className="mb-4">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="file-input file-input-bordered file-input-primary w-full bg-base-100/70 hover:bg-base-100/90 transition-all duration-300"
+                        disabled={isUploadingImage}
+                      />
+                      {selectedFile && (
+                        <div className="mt-2 p-2 bg-primary/10 rounded-lg">
+                          <p className="text-sm text-base-content/80">
+                            Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* OR Divider */}
+                    <div className="divider text-xs text-base-content/50">OR</div>
+
+                    {/* URL Input */}
                     <div className="relative">
                       <input
                         type="url"
                         value={photoUrl}
-                        onChange={(e) => setPhotoUrl(e.target.value)}
+                        onChange={(e) => {
+                          setPhotoUrl(e.target.value);
+                          setPreviewUrl(e.target.value);
+                          setSelectedFile(null); // Clear file selection when URL is entered
+                        }}
                         className="input input-bordered w-full bg-base-100/70 border-base-300/50 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300 pl-12 hover:bg-base-100/90"
-                        placeholder="Enter your photo URL"
+                        placeholder="Or paste photo URL"
                       />
                       <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                       </svg>
                     </div>
                   </div>
@@ -256,7 +376,7 @@ const EditProfile = ({ user }) => {
           <div className="w-full max-w-sm">
             <div className="sticky top-8">
               <h3 className="text-xl font-bold text-center mb-4 text-base-content/80">Live Preview</h3>
-              <UserCard user={{firstName, lastName, age, gender, about, photoUrl}} />
+              <UserCard user={{firstName, lastName, age, gender, about, photoUrl: previewUrl || photoUrl}} />
             </div>
           </div>
         </div>
